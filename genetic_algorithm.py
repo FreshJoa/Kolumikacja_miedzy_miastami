@@ -3,8 +3,8 @@ from itertools import repeat
 import numpy as np
 import random
 import math
-import sys
 import csv
+import argparse
 
 
 class Chromosome:
@@ -54,9 +54,6 @@ class Chromosome:
             self.full_demand_by_pair[f'demand_{first_city}_{second_city}'] = demand
             second_city += 1
 
-        # print(self.cities_demand)
-        # print(self.full_demand_by_pair)
-
     # funkcja zlicza koszt
     def count_cost(self, mapping, m):
         """
@@ -74,10 +71,6 @@ class Chromosome:
                 for edges_number in mapping[key][path_number]:
                     # obciążenie dodane do krawędzi =
                     # ułamek zapotrzebowania dla pary jaka przez nią idzie * całkowite obciążenie
-
-                    # print(self.cities_demand[key][path_number])
-                    # print(self.full_demand_by_pair[key])
-                    # print(self.cities_demand[key][path_number] * self.full_demand_by_pair[key])
 
                     self.demand_edges_list[edges_number] += (
                             self.cities_demand[key][path_number] * self.full_demand_by_pair[key])
@@ -241,7 +234,7 @@ class Algorithm:
     :type population: collections.iterable
     """
 
-    def __init__(self, modularity, population_number, crossover_probability, mutation_probabilty, disintegrate=True):
+    def __init__(self, modularity, population_number, crossover_probability, mutation_probabilty, disintegrate):
         """
        Inicjuje pola klaasy.
        """
@@ -273,15 +266,6 @@ class Algorithm:
       :param file_name: nazwa pliku wyjściowego
       :type file_name: str
       """
-
-        # przykład  - porównanie dwóch rodziców i ich dziecka
-
-        # print(self.population[0].cities_demand)
-        # print(self.population[1].cities_demand)
-        # child = Chromosome()
-        # child.crossover(self.population[0], self.population[1], self.crossover_probability)
-        # child.mutation(self.mutation_probabilty)
-        # print(child.cities_demand)
 
         with open(file_name, 'w') as write_file:
             csv_writer = csv.writer(write_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -327,23 +311,33 @@ class Algorithm:
                 [self.population_number, self.crossover_probability, self.mutation_probabilty, last_best_cost])
 
 
+def add_argprase():
+    praser = argparse.ArgumentParser()
+    praser.add_argument('modularity', type=int, help='modularność krawędzi')
+    praser.add_argument('initial_population', type=int, help='liczebność populacji początkowej')
+    praser.add_argument('crossing_probability', type=float, help='prawdopodobieństwo krzyżowania')
+    praser.add_argument('mutation_probability', type=float, help='prawdopodobieństwo mutacji')
+    praser.add_argument('demand_disaggregation', type=bool, help='dezagregacja zapotrzebowań')
+    praser.add_argument('iterations_number', type=int, help='liczba iteracji')
+    praser.add_argument('output_csv_file_name', type=str, help='nazwa pliku wyjściowego')
+
+    return praser.parse_args()
+
+
 if __name__ == '__main__':
     """
-    Uruchamia algorytm z parametrami podanymi przy uruchomieniu programu lub z domyślnymi.
+    Uruchamia algorytm z parametrami podanymi przy uruchomieniu programu 
     Parametry uruchomienia:
-    * modularność, 
-    * populacja początkowa, 
-    * prawdopodobieństwo krzyżowania, 
+    * modularność,
+    * populacja początkowa,
+    * prawdopodobieństwo krzyżowania,
     * prawdopodobieństwo mutacji,
-    * dezagregacja zapotrzebowań (domyślnie True),
+    * dezagregacja zapotrzebowań,
     * liczba iteracji,
     * nazwa pliku wyjściowego
     """
-    if len(sys.argv) > 1:
-        algorithm = Algorithm(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], bool(sys.argv[4]))
-        algorithm.run(sys.argv[5], sys.argv[6])
-    else:
-        algorithm = Algorithm(10, 10, 0.5, 0.4)
-        algorithm.run(10, 'result.csv')
-        algorithm = Algorithm(100, 10, 0.4, 0.0)
-        algorithm.run(500, 'result.csv')
+    args = add_argprase()
+
+    algorithm = Algorithm(args.modularity, args.initial_population, args.crossing_probability,
+                          args.mutation_probability, args.demand_disaggregation)
+    algorithm.run(args.iterations_number, args.output_csv_file_name)
